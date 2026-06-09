@@ -3,87 +3,469 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Controle de Fluxo de Caixa Simples - gerencie suas entradas e saídas financeiras de forma fácil e rápida." />
-  <title>Controle de Fluxo de Caixa Simples</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Sistema Comercial - Controle de Produtos e Fluxo de Caixa" />
+  <title>Sistema Comercial</title>
+  <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
-  <header>
-    <div class="header-top">
-      <div>
-        <h1>Fluxo de Caixa</h1>
-        <p>Controle suas finanças de forma simples</p>
-      </div>
-      <div class="header-usuario">
-        <span id="usuario-nome"></span>
-        <span id="usuario-badge" class="badge"></span>
-        <button class="btn-sair" id="btn-sair" onclick="sair()">Sair</button>
-      </div>
+
+<!-- Overlay mobile -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="fecharSidebar()"></div>
+
+<div class="app-layout">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h2>🏪 ComércioApp</h2>
+      <p>Sistema Comercial</p>
     </div>
-  </header>
 
-  <main>
-    <!-- Resumo financeiro -->
-    <section class="resumo" aria-label="Resumo financeiro">
-      <div class="card saldo">
-        <span class="label">Saldo</span>
-        <span class="valor" id="saldo">R$ 0,00</span>
-      </div>
-      <div class="card entrada">
-        <span class="label">Entradas</span>
-        <span class="valor" id="total-entradas">R$ 0,00</span>
-      </div>
-      <div class="card saida">
-        <span class="label">Saídas</span>
-        <span class="valor" id="total-saidas">R$ 0,00</span>
-      </div>
-    </section>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <button class="nav-item ativo" data-page="dashboard" onclick="navegar('dashboard', this)">
+        <span class="icon">📊</span> Dashboard
+      </button>
 
-    <!-- Formulário -->
-    <section class="formulario" aria-label="Nova movimentação">
-      <h2>Nova Movimentação</h2>
-      <form id="form-movimentacao" novalidate>
-        <div class="campo">
-          <label for="descricao">Descrição</label>
-          <input type="text" id="descricao" placeholder="Ex: Salário, Aluguel..." required />
+      <div class="nav-section">Estoque</div>
+      <button class="nav-item" data-page="produtos" onclick="navegar('produtos', this)">
+        <span class="icon">📦</span> Produtos
+      </button>
+
+      <div class="nav-section">Financeiro</div>
+      <button class="nav-item" data-page="caixa" onclick="navegar('caixa', this)">
+        <span class="icon">💰</span> Fluxo de Caixa
+      </button>
+      <button class="nav-item" data-page="relatorio" onclick="navegar('relatorio', this)">
+        <span class="icon">📈</span> Relatórios
+      </button>
+
+      <!-- Apenas admin -->
+      <div class="nav-section admin-only" style="display:none">Administração</div>
+      <button class="nav-item admin-only" style="display:none" data-page="usuarios" onclick="navegar('usuarios', this)">
+        <span class="icon">👥</span> Usuários
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="usuario-info">
+        <div class="nome" id="sidebar-nome">—</div>
+        <div class="tipo" id="sidebar-tipo">—</div>
+      </div>
+      <button class="btn-sair" onclick="sair()">↩ Sair</button>
+    </div>
+  </aside>
+
+  <!-- ── Conteúdo ──────────────────────────────────────────────────────── -->
+  <div class="main-content">
+    <header class="topbar">
+      <button class="btn-menu-mobile" onclick="toggleSidebar()">☰</button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ── DASHBOARD ──────────────────────────────────────────────── -->
+      <section class="page ativa" id="page-dashboard">
+        <div class="cards-grid" id="dash-cards">
+          <div class="card azul">
+            <div class="card-icon">💰</div>
+            <div class="card-label">Saldo em Caixa</div>
+            <div class="card-valor" id="dash-saldo">—</div>
+          </div>
+          <div class="card verde">
+            <div class="card-icon">📈</div>
+            <div class="card-label">Entradas Hoje</div>
+            <div class="card-valor" id="dash-entradas-hoje">—</div>
+            <div class="card-sub" id="dash-entradas-qtd"></div>
+          </div>
+          <div class="card vermelho">
+            <div class="card-icon">📉</div>
+            <div class="card-label">Saídas Hoje</div>
+            <div class="card-valor" id="dash-saidas-hoje">—</div>
+          </div>
+          <div class="card amarelo">
+            <div class="card-icon">⚠️</div>
+            <div class="card-label">Estoque Baixo</div>
+            <div class="card-valor" id="dash-estoque-baixo">—</div>
+            <div class="card-sub" id="dash-produtos-total"></div>
+          </div>
         </div>
-        <div class="campo">
-          <label for="valor">Valor (R$)</label>
-          <input type="number" id="valor" placeholder="0,00" min="0.01" step="0.01" required />
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem" class="dash-grid-2">
+          <!-- Gráfico -->
+          <div class="secao">
+            <div class="secao-header"><span class="secao-titulo">📊 Últimos 7 dias</span></div>
+            <div class="secao-body">
+              <div style="display:flex;gap:1rem;margin-bottom:0.75rem;font-size:0.75rem">
+                <span><span style="display:inline-block;width:10px;height:10px;background:var(--verde);border-radius:2px;margin-right:4px"></span>Entradas</span>
+                <span><span style="display:inline-block;width:10px;height:10px;background:var(--vermelho);border-radius:2px;margin-right:4px"></span>Saídas</span>
+              </div>
+              <div class="grafico-barras" id="grafico"></div>
+            </div>
+          </div>
+
+          <!-- Estoque baixo -->
+          <div class="secao">
+            <div class="secao-header"><span class="secao-titulo">⚠️ Estoque Baixo</span></div>
+            <div class="secao-body" id="dash-lista-estoque">
+              <div class="vazio">Carregando...</div>
+            </div>
+          </div>
         </div>
-        <div class="campo">
-          <label for="data">Data</label>
-          <input type="date" id="data" required />
+
+        <!-- Últimas movimentações -->
+        <div class="secao">
+          <div class="secao-header"><span class="secao-titulo">🕐 Últimas Movimentações</span></div>
+          <div class="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Tipo</th>
+                  <th>Categoria</th>
+                  <th>Valor</th>
+                  <th>Data</th>
+                  <th>Usuário</th>
+                </tr>
+              </thead>
+              <tbody id="dash-ultimas"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="campo">
-          <label for="tipo">Tipo</label>
-          <select id="tipo" required>
-            <option value="entrada">Entrada (Receita)</option>
-            <option value="saida">Saída (Despesa)</option>
-          </select>
+      </section>
+
+      <!-- ── PRODUTOS ────────────────────────────────────────────────── -->
+      <section class="page" id="page-produtos">
+        <div class="secao">
+          <div class="secao-header">
+            <span class="secao-titulo">📦 Produtos</span>
+            <button class="btn btn-primary btn-sm admin-only" style="display:none" onclick="abrirModalProduto()">+ Novo Produto</button>
+          </div>
+          <div class="secao-body">
+            <div class="filtros" style="margin-bottom:1rem">
+              <div class="campo">
+                <label>Buscar</label>
+                <input type="text" id="prod-busca" placeholder="Nome ou código de barras..." oninput="carregarProdutos()" />
+              </div>
+              <div class="campo">
+                <label>Categoria</label>
+                <select id="prod-categoria" onchange="carregarProdutos()">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Estoque</label>
+                <select id="prod-estoque-filtro" onchange="carregarProdutos()">
+                  <option value="">Todos</option>
+                  <option value="1">Estoque baixo</option>
+                </select>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="limparFiltrosProdutos()">Limpar</button>
+            </div>
+            <div class="tabela-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Cód. Barras</th>
+                    <th>Categoria</th>
+                    <th>Custo</th>
+                    <th>Venda</th>
+                    <th>Estoque</th>
+                    <th>Fornecedor</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-produtos"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <button type="submit" class="btn-primary">Adicionar</button>
+      </section>
+
+      <!-- ── CAIXA ───────────────────────────────────────────────────── -->
+      <section class="page" id="page-caixa">
+        <div class="cards-grid" style="margin-bottom:1.25rem">
+          <div class="card verde">
+            <div class="card-label">Total Entradas</div>
+            <div class="card-valor" id="caixa-entradas">—</div>
+          </div>
+          <div class="card vermelho">
+            <div class="card-label">Total Saídas</div>
+            <div class="card-valor" id="caixa-saidas">—</div>
+          </div>
+          <div class="card azul">
+            <div class="card-label">Saldo</div>
+            <div class="card-valor" id="caixa-saldo">—</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:340px 1fr;gap:1.25rem" class="caixa-grid">
+          <!-- Formulário -->
+          <div class="secao">
+            <div class="secao-header"><span class="secao-titulo">Nova Movimentação</span></div>
+            <div class="secao-body">
+              <form id="form-caixa" novalidate>
+                <div class="form-grid cols-1">
+                  <div class="campo">
+                    <label>Tipo</label>
+                    <select id="cx-tipo">
+                      <option value="entrada">Entrada</option>
+                      <option value="saida">Saída</option>
+                    </select>
+                  </div>
+                  <div class="campo">
+                    <label>Descrição</label>
+                    <input type="text" id="cx-descricao" placeholder="Ex: Venda, Aluguel..." required />
+                  </div>
+                  <div class="campo">
+                    <label>Valor (R$)</label>
+                    <input type="number" id="cx-valor" placeholder="0,00" min="0.01" step="0.01" required />
+                  </div>
+                  <div class="campo">
+                    <label>Categoria</label>
+                    <select id="cx-categoria">
+                      <option value="vendas">Vendas</option>
+                      <option value="recebimentos">Recebimentos</option>
+                      <option value="depositos">Depósitos</option>
+                      <option value="despesas">Despesas</option>
+                      <option value="fornecedores">Fornecedores</option>
+                      <option value="contas">Contas</option>
+                      <option value="outros">Outros</option>
+                    </select>
+                  </div>
+                  <div class="campo">
+                    <label>Forma de Pagamento</label>
+                    <select id="cx-pagamento">
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="pix">PIX</option>
+                      <option value="cartao_debito">Cartão Débito</option>
+                      <option value="cartao_credito">Cartão Crédito</option>
+                      <option value="transferencia">Transferência</option>
+                      <option value="boleto">Boleto</option>
+                    </select>
+                  </div>
+                  <div class="campo">
+                    <label>Data</label>
+                    <input type="date" id="cx-data" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary btn-full">Registrar</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Histórico -->
+          <div class="secao">
+            <div class="secao-header">
+              <span class="secao-titulo">Histórico</span>
+              <div class="filtros">
+                <div class="campo">
+                  <label>De</label>
+                  <input type="date" id="cx-filtro-inicio" onchange="carregarCaixa()" />
+                </div>
+                <div class="campo">
+                  <label>Até</label>
+                  <input type="date" id="cx-filtro-fim" onchange="carregarCaixa()" />
+                </div>
+                <div class="campo">
+                  <label>Tipo</label>
+                  <select id="cx-filtro-tipo" onchange="carregarCaixa()">
+                    <option value="">Todos</option>
+                    <option value="entrada">Entradas</option>
+                    <option value="saida">Saídas</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="tabela-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Tipo</th>
+                    <th>Categoria</th>
+                    <th>Pagamento</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-caixa"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RELATÓRIOS ──────────────────────────────────────────────── -->
+      <section class="page" id="page-relatorio">
+        <div class="secao" style="margin-bottom:1.25rem">
+          <div class="secao-header">
+            <span class="secao-titulo">📈 Relatório Mensal</span>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              <select id="rel-mes" onchange="carregarRelatorio()"></select>
+              <select id="rel-ano" onchange="carregarRelatorio()"></select>
+            </div>
+          </div>
+          <div class="secao-body">
+            <div class="cards-grid" style="margin-bottom:1.25rem">
+              <div class="card verde"><div class="card-label">Entradas</div><div class="card-valor" id="rel-entradas">—</div></div>
+              <div class="card vermelho"><div class="card-label">Saídas</div><div class="card-valor" id="rel-saidas">—</div></div>
+              <div class="card azul"><div class="card-label">Saldo</div><div class="card-valor" id="rel-saldo">—</div></div>
+            </div>
+            <div class="tabela-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Entradas</th><th>Saídas</th><th>Saldo do Dia</th></tr></thead>
+                <tbody id="tabela-relatorio"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── USUÁRIOS (admin) ────────────────────────────────────────── -->
+      <section class="page" id="page-usuarios">
+        <div class="secao">
+          <div class="secao-header">
+            <span class="secao-titulo">👥 Usuários</span>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalUsuario()">+ Novo Usuário</button>
+          </div>
+          <div class="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Telefone</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Criado em</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-usuarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Toast container ──────────────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Modal Produto ────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-produto">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-titulo" id="modal-produto-titulo">Novo Produto</span>
+      <button class="btn-fechar" onclick="fecharModal('modal-produto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-produto" novalidate>
+        <input type="hidden" id="prod-id" />
+        <div class="form-grid">
+          <div class="campo full">
+            <label>Nome do Produto *</label>
+            <input type="text" id="prod-nome" required />
+          </div>
+          <div class="campo">
+            <label>Código de Barras</label>
+            <input type="text" id="prod-codigo" />
+          </div>
+          <div class="campo">
+            <label>Categoria</label>
+            <select id="prod-cat-modal"></select>
+          </div>
+          <div class="campo">
+            <label>Preço de Custo (R$)</label>
+            <input type="number" id="prod-custo" min="0" step="0.01" placeholder="0,00" />
+          </div>
+          <div class="campo">
+            <label>Preço de Venda (R$) *</label>
+            <input type="number" id="prod-venda" min="0" step="0.01" placeholder="0,00" required />
+          </div>
+          <div class="campo">
+            <label>Quantidade em Estoque</label>
+            <input type="number" id="prod-qtd" min="0" value="0" />
+          </div>
+          <div class="campo">
+            <label>Estoque Mínimo</label>
+            <input type="number" id="prod-min" min="0" value="5" />
+          </div>
+          <div class="campo full">
+            <label>Fornecedor</label>
+            <input type="text" id="prod-fornecedor" />
+          </div>
+          <div class="campo full">
+            <label>Descrição</label>
+            <textarea id="prod-descricao"></textarea>
+          </div>
+        </div>
       </form>
-      <div id="feedback" class="feedback" role="alert" aria-live="polite"></div>
-    </section>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-produto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarProduto()">Salvar</button>
+    </div>
+  </div>
+</div>
 
-    <!-- Lista de movimentações -->
-    <section class="lista" aria-label="Movimentações">
-      <h2>Movimentações</h2>
-      <ul id="lista-movimentacoes" aria-label="Lista de movimentações">
-        <li class="vazio">Nenhuma movimentação registrada.</li>
-      </ul>
-    </section>
+<!-- ── Modal Usuário ────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-titulo" id="modal-usuario-titulo">Novo Usuário</span>
+      <button class="btn-fechar" onclick="fecharModal('modal-usuario')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-usuario" novalidate>
+        <input type="hidden" id="usr-id" />
+        <div class="form-grid">
+          <div class="campo full">
+            <label>Nome *</label>
+            <input type="text" id="usr-nome" required />
+          </div>
+          <div class="campo">
+            <label>E-mail *</label>
+            <input type="email" id="usr-email" required />
+          </div>
+          <div class="campo">
+            <label>Telefone</label>
+            <input type="tel" id="usr-telefone" placeholder="(00) 00000-0000" />
+          </div>
+          <div class="campo">
+            <label>Tipo</label>
+            <select id="usr-tipo">
+              <option value="usuario">Usuário</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label id="usr-senha-label">Senha *</label>
+            <input type="password" id="usr-senha" placeholder="Mínimo 6 caracteres" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
 
-    <!-- Painel admin: gerenciar usuários -->
-    <section class="lista" id="painel-admin" style="display:none" aria-label="Gerenciar usuários">
-      <h2>Usuários cadastrados</h2>
-      <ul id="lista-usuarios" aria-label="Lista de usuários">
-        <li class="vazio">Carregando...</li>
-      </ul>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
+<!-- ── Scripts ───────────────────────────────────────────────────────────── -->
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/produtos.js"></script>
+<script src="js/caixa.js"></script>
+<script src="js/relatorio.js"></script>
+<script src="js/usuarios.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>

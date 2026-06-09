@@ -1,10 +1,11 @@
 {
-  "name": "controle-financeiro",
-  "version": "1.0.0",
-  "description": "Controle de Fluxo de Caixa Simples",
+  "name": "comercio-sistema",
+  "version": "2.0.0",
+  "description": "Sistema comercial de controle de produtos e fluxo de caixa",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "seed": "node src/seed.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -1,0 +1,16 @@
+# Dependências
+node_modules/
+
+# Lock file
+package-lock.json
+
+# Banco de dados
+*.db
+*.db-shm
+*.db-wal
+
+# Variáveis de ambiente
+.env
+
+# Logs
+*.log

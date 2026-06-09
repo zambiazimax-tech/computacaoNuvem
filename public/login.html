@@ -3,60 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Login - Controle de Fluxo de Caixa Simples" />
-  <title>Login | Fluxo de Caixa</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Login - Sistema Comercial de Controle de Produtos e Caixa" />
+  <title>Login | Sistema Comercial</title>
+  <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
-  <header>
-    <h1>Fluxo de Caixa</h1>
-    <p>Controle suas finanças de forma simples</p>
-  </header>
-
-  <main>
-    <section class="formulario" aria-label="Acesso ao sistema">
-
-      <!-- Abas -->
-      <div class="abas" role="tablist">
-        <button class="aba ativa" id="aba-login" role="tab" aria-selected="true" onclick="trocarAba('login')">Entrar</button>
-        <button class="aba" id="aba-cadastro" role="tab" aria-selected="false" onclick="trocarAba('cadastro')">Criar conta</button>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <h1>🏪 ComércioApp</h1>
+        <p>Sistema de controle comercial</p>
       </div>
 
-      <!-- Login -->
       <form id="form-login" novalidate>
-        <div class="campo">
-          <label for="login-email">E-mail</label>
-          <input type="email" id="login-email" placeholder="seu@email.com" required autocomplete="email" />
+        <div class="campo" style="margin-bottom:1rem">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email" />
         </div>
-        <div class="campo">
-          <label for="login-senha">Senha</label>
-          <input type="password" id="login-senha" placeholder="••••••" required autocomplete="current-password" />
+        <div class="campo" style="margin-bottom:1.5rem">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" placeholder="••••••" required autocomplete="current-password" />
         </div>
-        <button type="submit" class="btn-primary">Entrar</button>
-        <div id="feedback-login" class="feedback" role="alert" aria-live="polite"></div>
+        <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+        <div id="feedback" style="margin-top:0.875rem;text-align:center;font-size:0.875rem;color:var(--vermelho);min-height:1.25rem"></div>
       </form>
+    </div>
+  </div>
 
-      <!-- Cadastro -->
-      <form id="form-cadastro" novalidate style="display:none">
-        <div class="campo">
-          <label for="cad-nome">Nome</label>
-          <input type="text" id="cad-nome" placeholder="Seu nome completo" required autocomplete="name" />
-        </div>
-        <div class="campo">
-          <label for="cad-email">E-mail</label>
-          <input type="email" id="cad-email" placeholder="seu@email.com" required autocomplete="email" />
-        </div>
-        <div class="campo">
-          <label for="cad-senha">Senha</label>
-          <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" required autocomplete="new-password" minlength="6" />
-        </div>
-        <button type="submit" class="btn-primary">Criar conta</button>
-        <div id="feedback-cadastro" class="feedback" role="alert" aria-live="polite"></div>
-      </form>
+  <script>
+    // Redireciona se já logado
+    if (localStorage.getItem('token')) location.href = '/index.html';
 
-    </section>
-  </main>
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fb = document.getElementById('feedback');
+      fb.textContent = '';
 
-  <script src="auth.js"></script>
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      try {
+        const res  = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+        const data = await res.json();
+
+        if (!res.ok) { fb.textContent = data.erro; return; }
+
+        localStorage.setItem('token',   data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        location.href = '/index.html';
+      } catch {
+        fb.textContent = 'Erro de conexão com o servidor.';
+      }
+    });
+  </script>
 </body>
 </html>
