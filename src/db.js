@@ -1,3 +1,4 @@
+
 /**
  * Conexão e inicialização do banco de dados SQLite.
  * Cria todas as tabelas e relacionamentos na primeira execução.
