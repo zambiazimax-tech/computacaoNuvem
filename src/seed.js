@@ -12,7 +12,7 @@ if (!existe) {
   db.prepare(`
     INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)
   `).run('Administrador', 'admin@admin.com', hash, 'admin');
-  console.log('✔ Admin criado: admin@admin.com / admin123');
+  console.log('✔ Admin criado: admin@admin.com / 123456');
 } else {
   console.log('ℹ Admin já existe.');
 }
