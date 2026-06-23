@@ -1,29 +1,27 @@
 /**
- * CRUD de usuários — acesso restrito a admin,
- * exceto GET /usuarios/me (próprio perfil).
+ * CRUD de usuários — acesso restrito a admin.
  */
 const router = require('express').Router();
-const bcrypt = require('bcryptjs');
 const db     = require('../db');
 const { autenticar, apenasAdmin, log } = require('../middleware/auth');
 
 const CAMPOS_PUBLICOS = 'id, nome, email, telefone, tipo, ativo, criado_em';
 
-// GET /usuarios — listar todos (admin)
+// GET /usuarios
 router.get('/', autenticar, apenasAdmin, (req, res) => {
   const usuarios = db.prepare(`SELECT ${CAMPOS_PUBLICOS} FROM usuarios ORDER BY criado_em DESC`).all();
   res.json(usuarios);
 });
 
-// GET /usuarios/:id — detalhe (admin)
+// GET /usuarios/:id
 router.get('/:id', autenticar, apenasAdmin, (req, res) => {
   const u = db.prepare(`SELECT ${CAMPOS_PUBLICOS} FROM usuarios WHERE id = ?`).get(req.params.id);
   if (!u) return res.status(404).json({ erro: 'Usuário não encontrado.' });
   res.json(u);
 });
 
-// POST /usuarios — criar (admin)
-router.post('/', autenticar, apenasAdmin, async (req, res) => {
+// POST /usuarios
+router.post('/', autenticar, apenasAdmin, (req, res) => {
   const { nome, email, senha, telefone, tipo } = req.body;
 
   if (!nome || !email || !senha) {
@@ -41,17 +39,16 @@ router.post('/', autenticar, apenasAdmin, async (req, res) => {
   const existe = db.prepare('SELECT id FROM usuarios WHERE email = ?').get(email.toLowerCase());
   if (existe) return res.status(409).json({ erro: 'E-mail já cadastrado.' });
 
-  const hash = await bcrypt.hash(senha, 10);
   const result = db.prepare(
     'INSERT INTO usuarios (nome, email, senha, telefone, tipo) VALUES (?, ?, ?, ?, ?)'
-  ).run(nome.trim(), email.toLowerCase(), hash, telefone || null, tipo || 'usuario');
+  ).run(nome.trim(), email.toLowerCase(), senha, telefone || null, tipo || 'usuario');
 
   log(req.usuario.id, 'USUARIO_CRIADO', { novo_id: result.lastInsertRowid, email });
   res.status(201).json({ id: result.lastInsertRowid, mensagem: 'Usuário criado.' });
 });
 
-// PUT /usuarios/:id — editar (admin)
-router.put('/:id', autenticar, apenasAdmin, async (req, res) => {
+// PUT /usuarios/:id
+router.put('/:id', autenticar, apenasAdmin, (req, res) => {
   const { nome, email, telefone, tipo, senha } = req.body;
   const { id } = req.params;
 
@@ -63,18 +60,17 @@ router.put('/:id', autenticar, apenasAdmin, async (req, res) => {
     if (dup) return res.status(409).json({ erro: 'E-mail já em uso.' });
   }
 
-  // Monta update dinâmico
   const campos = [];
   const vals   = [];
 
-  if (nome)     { campos.push('nome = ?');     vals.push(nome.trim()); }
-  if (email)    { campos.push('email = ?');    vals.push(email.toLowerCase()); }
+  if (nome)                  { campos.push('nome = ?');     vals.push(nome.trim()); }
+  if (email)                 { campos.push('email = ?');    vals.push(email.toLowerCase()); }
   if (telefone !== undefined) { campos.push('telefone = ?'); vals.push(telefone || null); }
-  if (tipo)     { campos.push('tipo = ?');     vals.push(tipo); }
+  if (tipo)                  { campos.push('tipo = ?');     vals.push(tipo); }
   if (senha) {
     if (senha.length < 6) return res.status(400).json({ erro: 'Senha deve ter pelo menos 6 caracteres.' });
     campos.push('senha = ?');
-    vals.push(await bcrypt.hash(senha, 10));
+    vals.push(senha);
   }
 
   if (campos.length === 0) return res.status(400).json({ erro: 'Nenhum campo para atualizar.' });
@@ -85,7 +81,7 @@ router.put('/:id', autenticar, apenasAdmin, async (req, res) => {
   res.json({ mensagem: 'Usuário atualizado.' });
 });
 
-// PATCH /usuarios/:id/status — ativar/desativar (exclusão lógica)
+// PATCH /usuarios/:id/status
 router.patch('/:id/status', autenticar, apenasAdmin, (req, res) => {
   const { id } = req.params;
 
@@ -102,7 +98,7 @@ router.patch('/:id/status', autenticar, apenasAdmin, (req, res) => {
   res.json({ ativo: novoStatus, mensagem: novoStatus ? 'Usuário ativado.' : 'Usuário desativado.' });
 });
 
-// DELETE /usuarios/:id — exclusão física (admin, não pode excluir a si mesmo)
+// DELETE /usuarios/:id
 router.delete('/:id', autenticar, apenasAdmin, (req, res) => {
   const { id } = req.params;
 
