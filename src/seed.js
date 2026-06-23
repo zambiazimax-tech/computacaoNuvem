@@ -8,7 +8,7 @@ const db = require('./db');
 // Admin padrão
 const existe = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('admin@admin.com');
 if (!existe) {
-  const hash = bcrypt.hashSync('admin123', 10);
+  const hash = bcrypt.hashSync('123456', 10);
   db.prepare(`
     INSERT INTO usuarios (nome, email, senha, tipo) VALUES (?, ?, ?, ?)
   `).run('Administrador', 'admin@admin.com', hash, 'admin');
